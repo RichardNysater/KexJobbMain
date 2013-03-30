@@ -4,7 +4,7 @@ import ncsa.hdf.object.h5.H5File;
 
 public class MillionSongInfoGetpls {
 	H5File file;
-	
+
 	public MillionSongInfoGetpls(String fileToOpen) throws Exception{
 		file = hdf5_getters.hdf5_open_readonly(fileToOpen);
 	}
@@ -16,7 +16,7 @@ public class MillionSongInfoGetpls {
 	}
 	public String getArtist() throws Exception{
 		return hdf5_getters.get_artist_name(file);
-		
+
 	}
 	public void close() throws HDF5Exception{
 		file.close();
@@ -42,9 +42,9 @@ public class MillionSongInfoGetpls {
 	public double getKeyConfidence() throws Exception{
 		return hdf5_getters.get_key_confidence(file);
 	}
-//	public double[] getTimbre() throws Exception{
-//		return hdf5_getters.get_segments_timbre(file);
-//	}
+	//	public double[] getTimbre() throws Exception{
+	//		return hdf5_getters.get_segments_timbre(file);
+	//	}
 	public double getLoudness() throws Exception{
 		return hdf5_getters.get_loudness(file);
 	}
@@ -52,25 +52,48 @@ public class MillionSongInfoGetpls {
 		return hdf5_getters.get_danceability(file);
 	}
 	public double getEnergy() throws Exception{
-		
+
 		return hdf5_getters.get_energy(file);
-		
+
 	}
 	/**
-	 * Returns the average timbre of all segments
+	 * Returns an array of the twelve average timbre values over all segments
 	 * @return
 	 * @throws Exception
 	 */
-	public double getTimbre() throws Exception{
+	public double[] getTimbre() throws Exception{
 		double[] timbre = hdf5_getters.get_segments_timbre(file);
-		double avgtimbre = 0;
-		int segments = 0;
-		for(int i = 0; i<timbre.length;i+=12){
-			avgtimbre+=timbre[i];
-			segments++;
+		double[] avgtimbre = new double[12];
+		for(int j = 0; j<12;j++){
+			int segments = 0;
+			for(int i = 0; i<timbre.length;i+=12){
+				avgtimbre[j]+=timbre[i+j];
+				segments++;
+			}
+			avgtimbre[j] /= segments;
 		}
-		return (avgtimbre/segments);
+		return avgtimbre;
 	}
+	
+	/**
+	 * Returns an array of the twelve average timbre confidence values over all segments
+	 * @return
+	 * @throws Exception
+	 */
+	public double[] getSegmentsConfidence() throws Exception{
+		double[] confidence = hdf5_getters.get_segments_confidence(file);
+		double[] avgconfidence = new double[12];
+		for(int j = 0; j<12;j++){
+			int segments = 0;
+			for(int i = 0; i<confidence.length-11;i+=12){
+				avgconfidence[j]+=confidence[i+j];
+				segments++;
+			}
+			avgconfidence[j] /= segments;
+		}
+		return avgconfidence;
+	}
+	
 	/**
 	 * Returns the average timbre of all segments above a certain confidence
 	 * @param confidence Only segments above this confidence will be calculated
@@ -90,23 +113,4 @@ public class MillionSongInfoGetpls {
 		}
 		return (avgtimbre/segments);
 	}
-	
-	public double getSegmentsConfidence() throws Exception{
-		double[] confidence = hdf5_getters.get_segments_confidence(file);
-		double avgconfidence = 0;
-		int segments = 0;
-		for(int i = 0; i<confidence.length;i++){
-			avgconfidence+=confidence[i];
-			segments++;
-		}
-		return (avgconfidence/segments);
-	}
-	
-	
-//	public static void run() throws Exception{
-//
-//		System.out.println(get.get_artist_name(file));
-//		System.out.println(get.get_duration(file));
-//		System.out.println(get.get_title(file));
-//	}
 }
