@@ -1,5 +1,7 @@
 import java.io.File;
 
+import ncsa.hdf.object.h5.H5File;
+
 /**
  * Compares a list of songs to a specified amount of songs from the Million Song Dataset (http://labrosa.ee.columbia.edu/millionsong/)
  * @author Richard Nysäter
@@ -9,11 +11,22 @@ public class SongCompare {
 	static ArffCreator arff;
 	static int iterations;
 	static final int COMPARE_AMOUNT= 30;
+	static double[] timbreOne;
+	static double[] confOne;
+	static double[] diffConf = new double[12];
+	static double[] diffTimbre = new double[12];
+	static String songOneArtist;
+	static String songOneTitle;
+	static double songOneTempo;
+	static double songOneLoudness;
+	static int songOneMode;
+	static int songOneKey;
+
 	static String[] songs = {
 		"C:\\Users\\Shaan\\Desktop\\songs\\celine\\TRWAHLU128F42799E6.h5",
 		"C:\\Users\\Shaan\\Desktop\\songs\\dido\\TRALLSG128F425A685.h5",
 		"C:\\Users\\Shaan\\Desktop\\songs\\green day\\TRJKVRF128E07857BF.h5",
-		"C:\\Users\\Shaan\\Desktop\\songs\\Iron maider\\TRXEWRK128F147FB6A.h5",
+		"C:\\Users\\Shaan\\Desktop\\songs\\Iron maiden\\TRXEWRK128F147FB6A.h5",
 		"C:\\Users\\Shaan\\Desktop\\songs\\metallica\\TRRNZBN128F147CC7A.h5",
 		"C:\\Users\\Shaan\\Desktop\\songs\\natalie\\TRZRSVX128F425A689.h5",
 		"C:\\Users\\Shaan\\Desktop\\songs\\oasis\\TRENOOE128F148EF23.h5",
@@ -42,12 +55,23 @@ public class SongCompare {
 	/**
 	 * Iterates over the MSD for every song.
 	 * @param files The list of files to compare (including subfolders)
+	 * @throws Exception 
 	 */
-	public static void compareSongs(File[] files){
+	public static void compareSongs(File[] files) throws Exception{
 		for(int i = 0; i<songs.length;i++){
 			System.out.println("Now comparing against "+songs[i]);
+			H5File songOneH5 = hdf5_getters.hdf5_open_readonly(songs[i]);
+			timbreOne = MSDExtractor.getTimbre(songOneH5);
+			confOne = MSDExtractor.getSegmentsConfidence(songOneH5);
+			songOneArtist = MSDExtractor.getArtist(songOneH5);
+			songOneTitle = MSDExtractor.getTitle(songOneH5);
+			songOneLoudness = MSDExtractor.getLoudness(songOneH5);
+			songOneMode = MSDExtractor.getMode(songOneH5);
+			songOneTempo = MSDExtractor.getTempo(songOneH5);
+			songOneKey = MSDExtractor.getKey(songOneH5);
 			iterations = 0;
-			recurseOverMSD(files,songs[i]);
+			songOneH5.close();
+			recurseOverMSD(files);
 		}
 	}
 
@@ -56,15 +80,15 @@ public class SongCompare {
 	 * @param files The list of files to recurse over.
 	 * @param songOne The song to compare the MSD songs to.
 	 */
-	public static void recurseOverMSD(File[] files, String songOne){
+	public static void recurseOverMSD(File[] files){
 		try{
 			for (File file : files){
 				if(iterations < COMPARE_AMOUNT){
 					if (file.isDirectory()){
-						recurseOverMSD(file.listFiles(), songOne);
+						recurseOverMSD(file.listFiles());
 					}
 					else{
-						iterations+= getDifference(songOne,file);
+						iterations+= getDifference(file);
 					}
 				}
 			}
@@ -79,18 +103,14 @@ public class SongCompare {
 	 * @param songTwo The file of the second song.
 	 * @return
 	 */
-	public static int getDifference(String songOne, File songTwo){
+	public static int getDifference(File songTwo){
 		try{
-			MSDExtractor gOne = new MSDExtractor(songOne);
-			MSDExtractor gTwo = new MSDExtractor(songTwo.getAbsolutePath());
-			double[] timbreOne = gOne.getTimbre();
-			double[] timbreTwo = gTwo.getTimbre();
-			double[] confOne = gOne.getSegmentsConfidence();
-			double[] confTwo = gTwo.getSegmentsConfidence();
-			double[] diffConf = new double[12];
-			double[] diffTimbre = new double[12];
+			H5File songTwoH5 = hdf5_getters.hdf5_open_readonly(songTwo.getAbsolutePath());
+			double[] timbreTwo = MSDExtractor.getTimbre(songTwoH5);
+			double[] confTwo = MSDExtractor.getSegmentsConfidence(songTwoH5);
 			double[] frequency;
 			double[] weight;
+			String[] genres;
 			boolean sameGenre = false;
 
 			for(int i = 0; i<12;i++){
@@ -98,14 +118,14 @@ public class SongCompare {
 				diffConf[i] = confOne[i]+confTwo[i];
 			}
 
-			String[] genres;
+			
 			try{
-				genres = gTwo.getGenres();
+				genres = MSDExtractor.getGenres(songTwoH5);
 			}catch(Exception e){
 				return 0;
 			}
-			frequency = gTwo.getFrequency();
-			weight = gTwo.getWeight();
+			frequency = MSDExtractor.getFrequency(songTwoH5);
+			weight = MSDExtractor.getWeight(songTwoH5);
 
 			for(int i = 0; i< genres.length;i++){
 				if((genres[i].equals("pop") && frequency[i] > 0.8 && weight[i] > 0.8) || (genres[i].equals("rock") && frequency[i] > 0.8 && weight[i] > 0.8)){
@@ -113,13 +133,11 @@ public class SongCompare {
 				}
 			}
 			if(sameGenre){
-				arff.addSong(gOne.getArtist()+" - "+gOne.getTitle(),gTwo.getArtist()+" - "+gTwo.getTitle(),Math.max(gOne.getTempo(),gTwo.getTempo())/Math.min(gOne.getTempo(), gTwo.getTempo()),Math.max(gOne.getLoudness(),gTwo.getLoudness())/Math.min(gOne.getLoudness(), gTwo.getLoudness()),Math.abs(gOne.getMode()-gTwo.getMode()),Math.abs(gOne.getKey()-gTwo.getKey()),diffTimbre,diffConf);
-				gOne.close();
-				gTwo.close();
+				arff.addSong(songOneArtist+" - "+songOneTitle,MSDExtractor.getArtist(songTwoH5)+" - "+MSDExtractor.getTitle(songTwoH5),Math.max(songOneTempo,MSDExtractor.getTempo(songTwoH5))/Math.min(songOneTempo, MSDExtractor.getTempo(songTwoH5)),Math.max(songOneLoudness,MSDExtractor.getLoudness(songTwoH5))/Math.min(songOneLoudness, MSDExtractor.getLoudness(songTwoH5)),Math.abs(songOneMode-MSDExtractor.getMode(songTwoH5)),Math.abs(songOneKey-MSDExtractor.getKey(songTwoH5)),diffTimbre,diffConf);
+				MSDExtractor.close(songTwoH5);
 				return 1;
 			}
-			gOne.close();
-			gTwo.close();
+			songTwoH5.close();
 		}catch(Exception e){
 			e.printStackTrace();
 		}

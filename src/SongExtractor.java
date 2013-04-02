@@ -4,6 +4,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 
+import ncsa.hdf.object.h5.H5File;
+
 
 public class SongExtractor {
 	static int counter = 0;
@@ -29,10 +31,10 @@ public class SongExtractor {
 					if(counter%1000 == 0){
 						System.out.println(counter);
 					}
-					MSDExtractor getter = new MSDExtractor(file.getAbsolutePath());
+					H5File songOneH5 = hdf5_getters.hdf5_open_readonly(file.getAbsolutePath());
 //					System.out.print(getter.getArtist()+" - "+ getter.getTitle()+ " " +getter.getKey()+" Loudness "+getter.getLoudness() +" Energy: " + getter.getEnergy()+"\n");
-					outfile.write(getter.getArtist()+" - "+getter.getTitle()+" - "+file.getName()+"\n");
-					getter.close();					
+					outfile.write(MSDExtractor.getArtist(songOneH5)+" - "+MSDExtractor.getTitle(songOneH5)+" - "+file.getName()+"\n");
+					MSDExtractor.close(songOneH5);					
 					counter++;
 				}
 			}
