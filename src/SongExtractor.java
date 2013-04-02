@@ -29,7 +29,7 @@ public class SongExtractor {
 					if(counter%1000 == 0){
 						System.out.println(counter);
 					}
-					MillionSongInfoGetpls getter = new MillionSongInfoGetpls(file.getAbsolutePath());
+					MSDExtractor getter = new MSDExtractor(file.getAbsolutePath());
 //					System.out.print(getter.getArtist()+" - "+ getter.getTitle()+ " " +getter.getKey()+" Loudness "+getter.getLoudness() +" Energy: " + getter.getEnergy()+"\n");
 					outfile.write(getter.getArtist()+" - "+getter.getTitle()+" - "+file.getName()+"\n");
 					getter.close();					

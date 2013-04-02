@@ -1,125 +1,71 @@
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import com.mysql.jdbc.Connection;
-import com.mysql.jdbc.PreparedStatement;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.sql.DriverManager;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Scanner;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import com.mysql.jdbc.Connection;
+import com.mysql.jdbc.PreparedStatement;
 /**
  * Handles queries to the mysql database.
  * Url to the database, user and password to database are stored separately a file called Databasedetails.
- * @author Shaan.
+ * @author Richard Nysäter.
  */
 public class DatabaseExtractor {
-	static String url = "";
-	static String user = "";
-	static String password = "";
-	static String query = "";
+	String url = "";
+	String user = "";
+	String password = "";
+	String query = "";
 
 	/**
-	 * Reads the URL, username and password for the mysql database from a file called 'Databasedetails'.
+	 * Constructor for the DatabaseExtractor. Reads the database details from the specified file.
+	 * @param databaseDetailsPath The full path to the file containing URL, user and password to the database.
 	 */
-	public static void main(String[] args) {
+	public DatabaseExtractor(String databaseDetailsPath){
 		try {
-			int[] allsongs = new int[10];
-			allsongs[0] = 3253551;				//Celine Dion - A New Day Has Come
-			allsongs[1] = 3107323;				//Dido - White Flag
-			allsongs[2] = 73499;			//Green Day - Basket Case
-			allsongs[3] = 417192;		   //Metallica - The Unforgiven
-			allsongs[4] = 434647;		  //Iron Maiden - The Trooper
-			allsongs[5] = 3107327;		  //Natalie Imbruglia - Smoke
-			allsongs[6] = 518324;				//Oasis - Wonderwall
-			allsongs[7] = 9048617;				//Scorpions - Wind Of Change
-			allsongs[8] = 8470520;		  //Timo Räisänen - About You Now
-			allsongs[9] = 1079677;				//Whitesnake - Here I Go Again
-			
-			String[] allSongNames = new String[10];
-			allSongNames[0] = "Celine Dion\t";				//Celine Dion - A New Day Has Come
-			allSongNames[1] = "Dido\t\t";				//Dido - White Flag
-			allSongNames[2] = "Green Day\t";			//Green Day - Basket Case
-			allSongNames[3] = "Metallica\t";		   //Metallica - The Unforgiven
-			allSongNames[4] = "Iron Maiden\t";		  //Iron Maiden - The Trooper
-			allSongNames[5] = "Natalie Imbruglia";		  //Natalie Imbruglia - Smoke
-			allSongNames[6] = "Oasis\t\t";				//Oasis - Wonderwall
-			allSongNames[7] = "Scorpions\t";				//Scorpions - Wind Of Change
-			allSongNames[8] = "Timo Räisänen\t";		  //Timo Räisänen - About You Now
-			allSongNames[9] = "Whitesnake\t";				//Whitesnake - Here I Go Again
-			
-			File file = new File("Databasedetails");
+			File file = new File(databaseDetailsPath);
 			Scanner scan;
 			scan = new Scanner(file);
 			url = scan.nextLine();
 			user = scan.nextLine();
 			password = scan.nextLine();
 			scan.close();
-			ArrayList<String> avgRatings = new ArrayList<String>();
-			try {
-				for(int i = 0; i<allsongs.length;i++){
-					for(int j = i; j<allsongs.length;j++){
-						if(j != i){
-							ArrayList<String> songRatings = getRatings(""+allsongs[i],""+allsongs[j]);
-							double avgRating = 0;
-							int max = 0;
-							int min = 101;
-							double deviation = 0;
-							for(String s : songRatings){
-								if(Integer.parseInt(s)>max){
-									max = Integer.parseInt(s);
-								}
-								if(Integer.parseInt(s)<min){
-									min = Integer.parseInt(s);
-								}
-								avgRating += Integer.parseInt(s);
-							}
-							avgRating /= songRatings.size();
-							
-							for(String s : songRatings){
-								deviation += Math.pow(Integer.parseInt(s)-avgRating,2);
-							}
-							deviation = Math.sqrt(deviation/songRatings.size());
-							avgRatings.add(allSongNames[i]+" and\t"+allSongNames[j]+"\tAverage rating: "+Math.round(avgRating)+"\tStddev: "+Math.round(deviation)+"\tMax:"+max+"\tMin: "+min);
-						}
-					}
-				}
-				for(String s : avgRatings){
-					System.out.println(s);
-				}
-
-
-			} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
 		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * @param songOne The ID of the first song.
+	 * @param songTwo The ID of the second song.
+	 * @return An ArrayList of every rating on the song pair.
+	 */
+	public ArrayList<Integer> getRatings(String songOne, String songTwo){
+		try {
+			query = "SELECT * FROM reviews WHERE Songone = ? AND Songtwo = ?";
+			ArrayList<Integer> songRatings = new ArrayList<Integer>();
+			Connection con = (Connection) DriverManager.getConnection(url, user, password);
+			PreparedStatement pst;
+
+			pst = (PreparedStatement) con.prepareStatement(query);
+
+			pst.setString(1, songOne);
+			pst.setString(2, songTwo);
+			ResultSet rs = pst.executeQuery();
+			while(rs.next()){
+				songRatings.add(Integer.parseInt(rs.getString("Rating")));
+			}
+			pst.close();
+			con.close();
+			return songRatings;
+		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-	
+		return null;
 	}
-	
-	
-	
-	public static ArrayList<String> getRatings(String songOne, String songTwo) throws SQLException{
-		query = "SELECT * FROM reviews WHERE Songone = ? AND Songtwo = ?";
-		ArrayList<String> songRatings = new ArrayList<String>();
-		Connection con = (Connection) DriverManager.getConnection(url, user, password);
-		PreparedStatement pst = (PreparedStatement) con.prepareStatement(query);
-		pst.setString(1, songOne);
-		pst.setString(2, songTwo);
-		ResultSet rs = pst.executeQuery();
-		while(rs.next()){
-			songRatings.add(rs.getString("Rating"));
-		}
-		pst.close();
-		con.close();
-		return songRatings;
-	}
-	
+
 	/**
 	 * Adds a similarity rating between a pair of songs to the database.
 	 * @param id The rater's session id.
@@ -172,7 +118,7 @@ public class DatabaseExtractor {
 	/**
 	 * Returns the votes the user has already completed.
 	 * @param Ip The user's ip.
-	 * @return Returns an ArrayList of integer arrays. Every integer array represents a pair of songs.
+	 * @return An ArrayList of integer arrays. Every integer array represents a pair of songs.
 	 */
 	public ArrayList<int[]> getVoted(String Ip){
 		ArrayList<int[]> returnArray = new ArrayList<int[]>();

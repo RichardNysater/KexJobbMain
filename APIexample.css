@@ -1,6 +1,0 @@
-String url = "http://api.7digital.com/1.2/track/preview?trackid=".concat(id).concat("&oauth_consumer_key=").concat(API_KEY); 
-
-http://api.7digital.com/1.2/track/preview?trackid=951886&oauth_consumer_key=7dtywchqwpuh
-id = 951886
-consumer key = 7dtywchqwpuh
-secret key = x6dgajvyu83sygcr

@@ -10,7 +10,7 @@ import weka.core.Instances;
 /**
  * Create an ARFF-file with the relevant MSD attributes.
  *
- * @author Richard Nysater
+ * @author Richard Nysäter.
  */
 public class ArffCreator {
 	FastVector      atts;
@@ -24,7 +24,8 @@ public class ArffCreator {
 	public ArffCreator(String relationName) throws Exception {
 		// 1. set up attributes
 		atts = new FastVector();
-//		atts.addElement(new Attribute("Song", (FastVector) null));
+		atts.addElement(new Attribute("Artist",(FastVector) null));
+		atts.addElement(new Attribute("Song",(FastVector) null));
 		atts.addElement(new Attribute("Tempo"));
 		atts.addElement(new Attribute("Loudness"));
 
@@ -48,46 +49,53 @@ public class ArffCreator {
 		for(int i = 0; i<12;i++){
 			atts.addElement(new Attribute("TimbreConfidence"+i));
 		}
-		
+		atts.addElement(new Attribute("Similarity"));
 		data = new Instances(relationName, atts, 0);
 	}
 	
 	/**
-	 * Add a data instance to the relation.
-	 * @param tempo The tempo of the song
-	 * @param loudness The song's loudness
-	 * @param mode The song's mode
-	 * @param key The song's key
-	 * @param the time signature
+	 * Adds a comparison of two songs to be printed to the arff file later.
+	 * @param artistSongOne The artist (and title) of the first song.
+	 * @param artistSongTwo The artist (and title) of the second song.
+	 * @param tempo The difference in tempo.
+	 * @param loudness The difference in loudness.
+	 * @param mode The difference in mode.
+	 * @param key The difference in key.
+	 * @param timbre The difference in timbre. The array represents the average timbre of each element over the entire song.
+	 * @param timbreConfidence The confidence value for each timbre element.
 	 */
-	public void addSong(double tempo, double loudness, int mode, int key, double[] timbre, double[] timbreConfidence){
+	public void addSong(String artistSongOne, String artistSongTwo, double tempo, double loudness, int mode, int key, double[] timbre, double[] timbreConfidence){
 		double[] vals = new double[data.numAttributes()];
-		vals[0] = tempo;
-		vals[1] = loudness;
-		vals[2] = mode;
-		vals[3] = key;
+		vals[0] = data.attribute(0).addStringValue(artistSongOne);
+		vals[1] = data.attribute(1).addStringValue(artistSongTwo);
+		vals[2] = tempo;
+		vals[3] = loudness;
+		vals[4] = mode;
+		vals[5] = key;
 		
 		for(int i = 0; i<12;i++){
-			vals[4+i] = timbre[i];
+			vals[6+i] = timbre[i];
 		}
 		for(int i = 0; i<12;i++){
-			vals[16+i] = timbreConfidence[i];
+			vals[18+i] = timbreConfidence[i];
 		}
-		
+		vals[30] = Instance.missingValue();
 		data.add(new Instance(1.0, vals));
 	}
 
-	public void printData(){
+	/**
+	 * Prints the arff to the specified file.
+	 * @param pathToFile Full path to the arff file.
+	 */
+	public void printData(String pathToFile){
 		try {
-			BufferedWriter writer = new BufferedWriter(new FileWriter("C:\\Users\\Shaan\\Desktop\\data.arff"));
+			BufferedWriter writer = new BufferedWriter(new FileWriter(pathToFile));
 			writer.write(data+"\n");
 			writer.flush();
 			writer.close();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-//		System.out.println(data+"\n");
 	}
 
 }
