@@ -1,5 +1,8 @@
+import java.io.BufferedReader;
 import java.io.File;
-
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.Scanner;
 import ncsa.hdf.object.h5.H5File;
 
 /**
@@ -8,9 +11,9 @@ import ncsa.hdf.object.h5.H5File;
  *
  */
 public class SongCompare {
+	static final int COMPARE_AMOUNT= 30; //The amount of songs to compare against in the MSD.
 	static ArffCreator arff;
 	static int iterations;
-	static final int COMPARE_AMOUNT= 30;
 	static double[] timbreOne;
 	static double[] confOne;
 	static double[] diffConf = new double[12];
@@ -21,35 +24,58 @@ public class SongCompare {
 	static double songOneLoudness;
 	static int songOneMode;
 	static int songOneKey;
-
-	static String[] songs = {
-		"C:\\Users\\Shaan\\Desktop\\songs\\celine\\TRWAHLU128F42799E6.h5",
-		"C:\\Users\\Shaan\\Desktop\\songs\\dido\\TRALLSG128F425A685.h5",
-		"C:\\Users\\Shaan\\Desktop\\songs\\green day\\TRJKVRF128E07857BF.h5",
-		"C:\\Users\\Shaan\\Desktop\\songs\\Iron maiden\\TRXEWRK128F147FB6A.h5",
-		"C:\\Users\\Shaan\\Desktop\\songs\\metallica\\TRRNZBN128F147CC7A.h5",
-		"C:\\Users\\Shaan\\Desktop\\songs\\natalie\\TRZRSVX128F425A689.h5",
-		"C:\\Users\\Shaan\\Desktop\\songs\\oasis\\TRENOOE128F148EF23.h5",
-		"C:\\Users\\Shaan\\Desktop\\songs\\scorpions\\TRCZIUO12903CE5274.h5",
-		"C:\\Users\\Shaan\\Desktop\\songs\\timo\\TRJVKUM12903CCC29D.h5",
-		"C:\\Users\\Shaan\\Desktop\\songs\\whitesnake\\TROOQSD128F4289971.h5"
-	};
-
+	static String[] songs;
+	
 	/**
 	 * Main class of SongCompare. Prints the comparisons to an arff file and prints the time taken.
 	 * @param args[0] The absolute path to the directory of the Million Song Dataset.
-	 * * @param args[1] The absolute path to the file you want to print the comparisons to.
+	 * @param args[1] The absolute path to the file you want to print the comparisons to.
+	 * @param args[2] The absolute path to the file containing the absolute paths to the songs you want comparisons to.
 	 * @throws Exception
 	 */
 	public static void main(String args[]) throws Exception{
 		System.out.println("Starting...");
 		//		File[] files = new File("C:\\Users\\Shaan\\Desktop\\songs").listFiles(); //input is filepath
 		arff = new ArffCreator("MSD");
+		importSongs(args[2]);
 		File[] files = new File(args[0]).listFiles();
 		long startTime = System.currentTimeMillis();
 		compareSongs(files);
 		System.out.println("Extraction finished after "+(System.currentTimeMillis()-startTime)/1000 +" seconds.");
 		arff.printData(args[1]);
+	}
+
+	/**
+	 * Imports the songs to compare against the MSD.
+	 * @param pathToSongList Absolute path to a file containing absolute paths to the songs to compare against the MSD.
+	 */
+	private static void importSongs(String pathToSongList){
+		try {
+			File file = new File(pathToSongList);
+			Scanner scan;
+			songs = new String[count(pathToSongList)];
+			scan = new Scanner(file);
+			for(int i = 0; i<songs.length;i++){
+				songs[i] = scan.nextLine();
+			}
+			scan.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * Help method for importSongs(). Counts the amount of lines in the file.
+	 * @param filename The file to count lines in.
+	 * @return The total amount of lines in the file.
+	 * @throws IOException
+	 */
+	private static int count(String filename) throws IOException {
+		BufferedReader reader = new BufferedReader(new FileReader(filename));
+		int lines = 0;
+		while (reader.readLine() != null) lines++;
+		reader.close();
+		return lines;
 	}
 
 	/**
@@ -118,7 +144,7 @@ public class SongCompare {
 				diffConf[i] = confOne[i]+confTwo[i];
 			}
 
-			
+
 			try{
 				genres = MSDExtractor.getGenres(songTwoH5);
 			}catch(Exception e){
