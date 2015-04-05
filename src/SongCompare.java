@@ -7,7 +7,7 @@ import ncsa.hdf.object.h5.H5File;
 
 /**
  * Compares a list of songs to a specified amount of songs from the Million Song Dataset (http://labrosa.ee.columbia.edu/millionsong/)
- * @author Richard Nys‰ter
+ * @author Richard Nys√§ter
  *
  */
 public class SongCompare {
@@ -35,7 +35,7 @@ public class SongCompare {
 	 */
 	public static void main(String args[]) throws Exception{
 		System.out.println("Starting...");
-		//		File[] files = new File("C:\\Users\\Shaan\\Desktop\\songs").listFiles(); //input is filepath
+		//		File[] files = new File("[PATH TO SONGS]").listFiles(); //input is filepath
 		arff = new ArffCreator("MSD");
 		importSongs(args[2]);
 		File[] files = new File(args[0]).listFiles();
